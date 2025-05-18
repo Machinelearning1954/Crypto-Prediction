@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts - Crypto Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <a href="{{ url_for('prediction.dashboard') }}" class="navbar-brand">Crypto Prediction</a>
+        <ul class="navbar-nav">
+            <li class="nav-item"><a href="{{ url_for('prediction.dashboard') }}" class="nav-link">Dashboard</a></li>
+            <li class="nav-item"><a href="{{ url_for('prediction.alerts') }}" class="nav-link">Alerts</a></li>
+            <li class="nav-item"><a href="{{ url_for('notification.settings') }}" class="nav-link">Notifications</a></li>
+            <li class="nav-item"><a href="{{ url_for('main.profile') }}" class="nav-link">Profile</a></li>
+            <li class="nav-item"><a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a></li>
+        </ul>
+    </div>
+
+    <div class="dashboard-container">
+        <h1>Manage Price Alerts</h1>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for message in messages %}
+                        <div class="flash-message">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Create New Alert</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('prediction.create_alert') }}">
+                    <div class="form-group">
+                        <label for="cryptocurrency">Cryptocurrency</label>
+                        <select id="cryptocurrency" name="cryptocurrency" class="form-control" required>
+                            <option value="">Select a cryptocurrency</option>
+                            {% for crypto in cryptos %}
+                            <option value="{{ crypto.id }}">{{ crypto.name }} ({{ crypto.symbol }}) - ${{ "%.2f"|format(crypto.current_price) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="condition">Condition</label>
+                        <select id="condition" name="condition" class="form-control">
+                            <option value="above">Price goes above</option>
+                            <option value="below">Price goes below</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="target_price">Target Price ($)</label>
+                        <input type="number" id="target_price" name="target_price" step="0.01" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Alert</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Your Alerts</h2>
+            </div>
+            <div class="card-body">
+                {% if alerts %}
+                <table class="alerts-table">
+                    <thead>
+                        <tr>
+                            <th>Cryptocurrency</th>
+                            <th>Condition</th>
+                            <th>Target Price</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr>
+                            <td>{{ alert.cryptocurrency }}</td>
+                            <td>{{ alert.condition }}</td>
+                            <td>${{ "%.2f"|format(alert.target_price) }}</td>
+                            <td>{{ "Active" if alert.is_active else "Inactive" }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('prediction.toggle_alert', alert_id=alert.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-secondary btn-sm">{{ "Deactivate" if alert.is_active else "Activate" }}</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('prediction.delete_alert', alert_id=alert.id) }}" style="display: inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>You don't have any alerts yet. Create an alert to get notified when a cryptocurrency reaches your target price.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-populate target price when cryptocurrency is selected
+        document.getElementById('cryptocurrency').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                const priceText = selectedOption.text.match(/\$([0-9.]+)/);
+                if (priceText && priceText[1]) {
+                    document.getElementById('target_price').value = priceText[1];
+                }
+            }
+        });
+    </script>
+</body>
+</html>
